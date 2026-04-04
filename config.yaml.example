@@ -1,0 +1,13 @@
+nameservers:
+- name: ns1                            # The name of the nameserver (e.g., ns1, ns2, etc.)
+  ipv4: 127.0.0.1                      # the IPv4 address of the nameserver, will be added as an A record in the glue.
+  ipv6: ::1                            # the IPv6 address of the nameserver, will be added as an AAAA record in the glue.
+zones:
+- name: example.com                    # The domain name of the zone to generate (e.g., example.com)
+  file: /etc/bind/zones/db.example.com # The output file path for the generated zone file (e.g., /etc/bind/zones/db.example.com)
+  cloudflareToken:                     # The Cloudflare API token for the zone. It must have Zone:Read and DNS:Read permissions
+  mappings:                            # A mapping of IP addresses to use to rewrite the cloudflare records. A comment of remap={key} will result in the record being rewritten to an A/AAAA record to {key}
+    host1_4: 192.168.1.5          
+    host1_6: fe80::5
+    host2_4: 192.168.1.7
+    host2_6: fe80::7

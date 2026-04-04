@@ -1,0 +1,20 @@
+{
+  "name": "cloudflare-to-bind",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "cloudflare": "^5.2.0",
+    "dns": "^0.2.2",
+    "dns-zonefile": "^0.3.2"
+  },
+  "trustedDependencies": [
+    "ws"
+  ]
+}
