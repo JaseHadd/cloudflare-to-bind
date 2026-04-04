@@ -5,6 +5,7 @@ import { Cloudflare } from 'cloudflare';
 import zonefile from 'dns-zonefile'
 import dns from 'dns';
 import { YAML } from 'bun';
+import os from 'os';
 
 interface Config {
     nameservers: NameServer[];
@@ -24,6 +25,22 @@ interface Zone {
     mappings: {
         [key: string]: string;
     };
+}
+
+let ipv4: string = '';
+let ipv6: string = '';
+
+const interfaces = os.networkInterfaces();
+
+for (const ifName of Object.keys(interfaces)) {
+    for (const address of interfaces[ifName]!) {
+        if (address.internal)
+            continue;
+        if (address.family === 'IPv4')
+            ipv4 = address.address;
+        if (address.family === 'IPv6' && address.scopeid === 0)
+            ipv6 = address.address;
+    }
 }
 
 const config = await Bun.file('config.yaml').text()
@@ -184,6 +201,12 @@ for (const zone of config.zones) {
             console.error(`Nameserver ${ns.name} must have at least one of ipv4 or ipv6 defined.`);
             continue;
         }
+
+        if (ns.ipv4 === 'LOCAL')
+            ns.ipv4 = ipv4;
+        if (ns.ipv6 === 'LOCAL')
+            ns.ipv6 = ipv6;
+
         records.push({
             type: 'NS',
             name: '@',
