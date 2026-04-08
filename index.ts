@@ -293,7 +293,7 @@ for (const zone of config.zones) {
     const soaStart = `${'@'.padEnd(nameLength)} IN ${'SOA'.padEnd(typeLength)}`;
     const soaContentStart = ''.padEnd(soaStart.length);
 
-    await zoneFile.delete();
+    await zoneFile.delete().catch(() => {});
 
     const writer = zoneFile.writer();
 
