@@ -7,6 +7,8 @@ import dns from 'dns';
 import { YAML } from 'bun';
 import os from 'os';
 
+type RecordType = 'A' | 'AAAA' | 'CNAME' | 'MX' | 'TXT' | 'NS';
+
 interface Config {
     nameservers: NameServer[];
     zones: Zone[];
@@ -19,13 +21,21 @@ interface NameServer {
     primary?: boolean;
 }
 
+interface Record {
+    name: string;
+    type: RecordType;
+    content: string;
+    ttl?: number;
+}
+
 interface Zone {
     name: string;
     file: string;
     cloudflareToken: string;
-    mappings: {
+    mappings?: {
         [key: string]: string;
     };
+    records?: Record[];
 }
 
 let ipv4: string = '';
@@ -118,7 +128,7 @@ for (const zone of config.zones) {
         // replace the record content, if it has a 'remap=' paremeter in the comment
         const remap = record.comment?.split(' ').find((part) => part.startsWith('remap='))?.split('=')[1];
 
-        if (remap && zone.mappings[remap]) {
+        if (remap && zone.mappings?.[remap]) {
             record.content = zone.mappings[remap];
         }
 
@@ -163,7 +173,6 @@ for (const zone of config.zones) {
 
                 return newRecords;
             } else {
-
                 const namedRecords = records.filter((record) => record.name === name);
 
                 if (namedRecords.length === 1 && namedRecords[0]!.type === 'CNAME') {
@@ -238,6 +247,26 @@ for (const zone of config.zones) {
                 comment: 'generated NS glue'
             });
         }
+    }
+
+    // inject any records from the config file, replacing any existing records with the same name and type
+    // (or just the same name for A/AAAA/CNAME records, since they conflict with each other)
+    for (const record of zone.records || []) {
+        const addressTypes = ['A', 'AAAA', 'CNAME'];
+
+        if (addressTypes.includes(record.type))
+            records = records.filter(r => !(r.name === record.name && addressTypes.includes(r.type)));
+        else
+            records = records.filter(r => !(r.name === record.name && r.type === record.type));
+
+        records.push({
+            name: record.name,
+            type: record.type,
+            content: record.content,
+            ttl: record.ttl ?? 1,
+            proxied: false,
+            comment: 'record from config file'
+        });
     }
 
     // Finally, we sort the records by name, then by type, with the apex record always first
